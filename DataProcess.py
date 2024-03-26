@@ -4,7 +4,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, row_number, sum as _sum, when
 from pyspark.sql.window import Window
-import unittest
+
 
 '''
 * @author  chenyingyan
@@ -64,32 +64,30 @@ class TestDataProcess(unittest.TestCase):
         cls.df = cls.spark.createDataFrame(data, schema = columns)
         cls.processor = DataProcess(cls.spark)
 
-    def test_filter_data(self):
-        result = self.processor.filter_data(self.df).collect()
-        expected = [("ABC17969 (AB)", "1", "ABC17969", 2022), ("AE686 (AE)", "7", "AE686", 2023)]
-        self.assertEqual(result, expected)
+    def test_func(self):
+        result_df1 = self.processor.filter_data(self.df)
 
-    def test_flatmap_aggr(self):
-        df_pre = self.processor.filter_data(self.df)
-        result = self.processor.flatmap_aggr(self.df, df_pre).collect()
-        expected = [("ABC17969 (AB)", 2022, 4)]
-        self.assertEqual(result, expected)
+        assert_rt1 = [("ABC17969 (AB)", "1", "ABC17969", 2022), ("AE686 (AE)", "7", "AE686", 2023)]
 
-    def test_accu_find(self):
-        df_pre = self.processor.filter_data(self.df)
-        df_aggr = self.processor.flatmap_aggr(self.df, df_pre)
-        result = self.processor.accu_find(df_aggr, 3).collect()
-        expected = [("ABC17969 (AB)", 2022), ("AE686 (AE)", 2023)]
-        self.assertEqual(result, expected)
+        self.assertEqual(result_df1.collect(), assert_rt1)
+        
+        result_df2 = self.processor.flatmap_aggr(self.df, result_df1)
+        assert_rt2 = [("ABC17969 (AB)", 2022, 4)]
+        
+        self.assertEqual(result_df2.collect(), assert_rt2)
 
+        result_df3 = self.processor.accu_find(result_df2, 3)
+        assert_rt3 = [("ABC17969 (AB)", 2022), ("AE686 (AE)", 2023)]
+        self.assertEqual(result_df3.collect(), assert_rt3)
+        
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-
 if __name__ == "__main__":
 
+    # test case
     # unittest.main()
-
+    
     # init spark
     spark = SparkSession.builder.appName("DataAnalisysSparkInit").getOrCreate()
     data = [
@@ -133,7 +131,5 @@ if __name__ == "__main__":
     
     # end spark
     spark.stop()
-
-
 
 
